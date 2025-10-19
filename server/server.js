@@ -1,19 +1,20 @@
-const dotenv = require('dotenv').config({
-    path: './config.env'
-});
-const mongoose = require('mongoose');
-const multer = require('multer');
-const app = require('./app');
+require("dotenv").config({ path: "./config.env" });
+const mongoose = require("mongoose");
+const app = require("./app");
 
-// const uri = process.env.URL.replace('<db_password>', process.env.PASSWORD);
+const PORT = process.env.PORT || 3000;
+const MONGODB_URI = process.env.MONGODB_URI
 
-// mongoose.connect(uri, {useNewUrlParser: true, useCreateIndex: true, useFindAndModify: false}).then(
-//     console.log('Successfully connected to the database!')
-// )
+(async () => {
+  try {
+    await mongoose.connect(MONGODB_URI, { autoIndex: true });
+    console.log(" MongoDB connected");
 
-
-const port = process.env.PORT || 3000;
-
-app.listen(port, () => {
-    console.log(`The server is running on port: ${port}`);
-})
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("DB connection failed:", err);
+    process.exit(1);
+  }
+})();
