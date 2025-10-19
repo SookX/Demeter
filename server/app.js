@@ -15,9 +15,12 @@ const globalErrorHandler = require('./controllers/errorController');
 const app = express();
 const path = require('path')
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-app.use(cookieParser());
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true,               
+}));app.use(cookieParser());
 app.use(express.json());
+
 
 if(process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'))

@@ -4,10 +4,10 @@ const passport = require("passport");
 const bcrypt = require("bcrypt");
 const User = require("../schemas/userSchema");
 const { createJWT } = require("../utils/jwtUtils");
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../utils/AppError");
 require("../utils/passportConfig");
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-// Google login
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"], session: false })
@@ -16,34 +16,32 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: "/auth/login" }),
-  (req, res) => {
+  catchAsync(async (req, res) => {
+    if (!req.user) throw new AppError("Google login failed", 401);
+
     const token = createJWT(req.user.id, req.user.username);
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-      maxAge: 2 * 60 * 60 * 1000, // 2h
+
+    res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: { id: req.user.id, username: req.user.username },
     });
-    return res.redirect("http://localhost:5173");
-  }
+  })
 );
 
-
-// register
-
-router.post("/register", async (req, res) => {
-  try {
+router.post(
+  "/register",
+  catchAsync(async (req, res) => {
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
-      res.cookie("message", "All fields are required", { maxAge: 6000, httpOnly: true });
-      return res.redirect(`${FRONTEND_URL}/register`);
+      throw new AppError("All fields are required", 400);
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      res.cookie("message", "User already exists", { maxAge: 6000, httpOnly: true });
-      return res.redirect(`${FRONTEND_URL}/login`);
+      throw new AppError("User already exists", 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -55,58 +53,44 @@ router.post("/register", async (req, res) => {
     });
 
     const token = createJWT(newUser.id, newUser.username);
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-      maxAge: 2 * 60 * 60 * 1000,
+
+    res.status(201).json({
+      success: true,
+      message: "Registration successful",
+      token,
+      user: { id: newUser.id, username: newUser.username, email: newUser.email },
     });
+  })
+);
 
-    res.cookie("message", "Registration successful", { maxAge: 6000, httpOnly: true });
-    return res.redirect(FRONTEND_URL);
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.cookie("message", error.message, { maxAge: 6000, httpOnly: true });
-    return res.redirect(`${FRONTEND_URL}/register`);
-  }
-});
+router.post(
+  "/login",
+  catchAsync(async (req, res) => {
+    const email = req.body.email?.trim();
+    const password = req.body.password?.trim();
 
-// login 
-router.post("/login", async (req, res) => {
-  try {
-    const username = req.body.username.trim();
-    const password = req.body.password.trim();
-
-    const currentUser = await User.findOne({ username });
-    if(!currentUser) {
-      res.cookie("message", "Invalid User", { maxAge: 6000, httpOnly: true });
-      return res.redirect(`${FRONTEND_URL}/login`);
+    if (!email || !password) {
+      throw new AppError("Email and password are required", 400);
+    }
+    const currentUser = await User.findOne({ email });
+    if (!currentUser) {
+      throw new AppError("Invalid user", 401);
     }
 
     const isMatch = await bcrypt.compare(password, currentUser.password);
     if (!isMatch) {
-      res.cookie("message", "Invalid password", { maxAge: 6000, httpOnly: true });
-    return res.redirect(`${FRONTEND_URL}/login`);
+      throw new AppError("Invalid password", 401);
     }
 
     const token = createJWT(currentUser.id, currentUser.username);
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-      maxAge: 2 * 60 * 60 * 1000,
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: { id: currentUser.id, username: currentUser.username, email: currentUser.email },
     });
-
-    res.cookie("message", "Login Successful", { maxAge: 6000, httpOnly: true });
-    return res.redirect(FRONTEND_URL);
-  } catch(error){
-    res.cookie("message", error.message, { maxAge: 6000, httpOnly: true });
-    return res.redirect(`${FRONTEND_URL}/login`);
-  }
-});
-
-
-
-
+  })
+);
 
 module.exports = router;
