@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const bcrypt = require("bcrypt");
-const User = require("../Schemas/userSchema");
+const User = require("../schemas/userSchema");
 const { createJWT } = require("../utils/jwtUtils");
 require("../utils/passportConfig");
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -27,6 +27,49 @@ router.get(
     return res.redirect("http://localhost:5173");
   }
 );
+
+
+// register
+
+router.post("/register", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      res.cookie("message", "All fields are required", { maxAge: 6000, httpOnly: true });
+      return res.redirect(`${FRONTEND_URL}/register`);
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.cookie("message", "User already exists", { maxAge: 6000, httpOnly: true });
+      return res.redirect(`${FRONTEND_URL}/login`);
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    const token = createJWT(newUser.id, newUser.username);
+    res.cookie("jwt", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+      maxAge: 2 * 60 * 60 * 1000,
+    });
+
+    res.cookie("message", "Registration successful", { maxAge: 6000, httpOnly: true });
+    return res.redirect(FRONTEND_URL);
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.cookie("message", error.message, { maxAge: 6000, httpOnly: true });
+    return res.redirect(`${FRONTEND_URL}/register`);
+  }
+});
 
 // login 
 router.post("/login", async (req, res) => {
@@ -61,6 +104,9 @@ router.post("/login", async (req, res) => {
     return res.redirect(`${FRONTEND_URL}/login`);
   }
 });
+
+
+
 
 
 module.exports = router;

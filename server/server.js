@@ -1,9 +1,9 @@
-require("dotenv").config({ path: "./config.env" });
+require("dotenv").config({ path: __dirname + "/config.env" });
 const mongoose = require("mongoose");
 const app = require("./app");
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI
+const MONGODB_URI = process.env.MONGODB_URI;
 
 (async () => {
   try {
