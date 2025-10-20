@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      window.location.href = `${api.defaults.baseURL}/auth/google`;
+      window.location.href = `${api.defaults.baseURL}/google`;
       return { error: null };
     } catch (err: any) {
       return { error: err };
