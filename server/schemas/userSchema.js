@@ -1,14 +1,29 @@
   const mongoose = require("mongoose");
   const AutoIncrement = require("mongoose-sequence")(mongoose);
 
-  const plantSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    area: { type: Number, required: true },          
-    waterPerArea: { type: Number, required: true }, 
-    plantedAt: { type: Date, default: Date.now },
-    lastWateredAt: { type: Date, default: null },
-    nextWateringAt: { type: Date, default: null },
-  });
+  const wateringSchema = new mongoose.Schema({
+  date: { type: Date, required: true, default: Date.now },
+  amount: { type: Number, default: null }, 
+  note: { type: String, default: "" }, 
+});
+
+const plantSchema = new mongoose.Schema({
+  
+  name: { type: String, required: true },
+  plantedAt: { type: Date, default: Date.now },
+  lastWateredAt: { type: Date, default: null },
+  nextWateringAt: { type: Date, default: null },
+
+  scientificName: { type: String, required: false },
+  family: { type: String },
+  apiId: { type: Number },
+  slug: { type: String },
+  imageUrl: { type: String },
+
+  waterings: [wateringSchema],
+
+  createdAt: { type: Date, default: Date.now },
+});
 
   const UserSchema = new mongoose.Schema(
     {

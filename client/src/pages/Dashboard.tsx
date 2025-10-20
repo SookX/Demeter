@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, MapPin, Plus } from "lucide-react";
 import WeatherCard from "../components/WeatherCard";
+import PlantCard from "../components/PlantCard";
+import SoilClimateCard from "../components/SoilClimateCard";
+import { Leaf, Info } from 'lucide-react';
 
 interface WeatherData {
   temperature: number;
@@ -39,55 +42,91 @@ interface User {
   region: Region;
 }
 
+
+function getWeatherEmoji(temp, description) {
+  description = description.toLowerCase();
+
+  if (description.includes("thunder") || description.includes("storm")) return "⛈️";
+  if (description.includes("snow")) return "❄️";
+  if (description.includes("rain") || description.includes("drizzle")) return "🌧️";
+  if (description.includes("cloud")) return "☁️";
+  if (description.includes("clear")) return "☀️"; 
+
+  if (temp >= 40) return "🥵"; 
+  if (temp >= 30) return "☀️";
+  if (temp >= 25) return "🌤️"; 
+  if (temp >= 15) return "⛅";  
+  if (temp >= 5) return "🌥️";  
+  if (temp >= 0) return "🧊"; 
+  return "❄️"; 
+}
+
+
+
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "plants">("dashboard");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState(null);
+  const [weather, setWeather] = useState(null);
 
-  // --- For plant search ---
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [addingPlant, setAddingPlant] = useState(false);
+  const [recommendedPlants, setRecommendedPlants] = useState<any[]>([]);
   const TREFLE_TOKEN = import.meta.env.VITE_APP_TREFLE_TOKEN; 
 
   // --- Fetch user and dummy weather ---
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = sessionStorage.getItem("token");
+    const fetchUserAndWeather = async () => {
+      const token = localStorage.getItem("token");
       if (!token) return navigate("/login");
 
       try {
-        const res = await fetch("http://localhost:3000/auth/me", {
+        // --- Fetch user ---
+        const userRes = await fetch("http://localhost:3000/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (!userRes.ok) throw new Error("Failed to fetch user");
+        const userData = await userRes.json();
+        setUser(userData);
 
-        if (!res.ok) throw new Error("Failed to fetch user");
-        const data = await res.json();
-        setUser(data);
-
-        if (!data.region?.lat || !data.region?.lon) {
+        if (!userData.region?.lat || !userData.region?.lon) {
           navigate("/locationSelect");
-          return; // stop further execution
+          return;
         }
-        // Dummy weather
-        const dummyWeather: WeatherData = {
-          temperature: 24,
-          description: "Sunny",
-          feelsLike: 25,
-          humidity: 55,
-          windSpeed: 12,
-          icon: "🌤️",
-          forecast: [
-            { date: new Date().toISOString(), icon: "🌤️", tempMax: 26, tempMin: 18 },
-            { date: new Date(Date.now() + 86400000).toISOString(), icon: "⛅", tempMax: 24, tempMin: 17 },
-            { date: new Date(Date.now() + 2 * 86400000).toISOString(), icon: "🌦️", tempMax: 22, tempMin: 16 },
-            { date: new Date(Date.now() + 3 * 86400000).toISOString(), icon: "🌤️", tempMax: 25, tempMin: 18 },
-            { date: new Date(Date.now() + 4 * 86400000).toISOString(), icon: "☀️", tempMax: 27, tempMin: 19 },
-          ],
-        };
-        setWeather(dummyWeather);
+
+        const { lat, lon } = userData.region;
+
+        // --- Fetch current weather ---
+        const currentRes = await fetch(`http://localhost:3000/weather/current?lat=${lat}&lon=${lon}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!currentRes.ok) throw new Error("Failed to fetch current weather");
+        const currentData = await currentRes.json();
+
+        // --- Fetch daily forecast ---
+        const dailyRes = await fetch(`http://localhost:3000/weather/daily?lat=${lat}&lon=${lon}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!dailyRes.ok) throw new Error("Failed to fetch daily forecast");
+        const dailyData = await dailyRes.json();
+
+        // --- Combine current + forecast for WeatherCard ---
+        setWeather({
+          temperature: currentData.temperature,
+          description: currentData.description,
+          feelsLike: currentData.feelsLike,
+          humidity: currentData.humidity,
+          windSpeed: currentData.windSpeed,
+          icon: getWeatherEmoji(currentData.temperature, currentData.description),
+          forecast: dailyData.map(d => ({
+            date: d.date,
+            icon: getWeatherEmoji((d.tempMax + d.tempMin) / 2, currentData.description),
+            tempMax: d.tempMax,
+            tempMin: d.tempMin,
+          })),
+        });
       } catch (err) {
         console.error(err);
         navigate("/login");
@@ -95,21 +134,81 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-    fetchUser();
+
+    fetchUserAndWeather();
   }, [navigate]);
 
-  // --- Sign out ---
+  useEffect(() => {
+  const fetchRecommendedPlants = async () => {
+    if (!user) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // 1️⃣ Get recommended plant names
+      const recRes = await fetch("http://localhost:3000/plants/recommendations", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!recRes.ok) throw new Error("Failed to fetch recommended plants");
+      const recData = await recRes.json();
+      const plantNames: string[] = recData.recommendedPlants || [];
+
+      // 2️⃣ Fetch info for each plant from search endpoint
+      const plantInfoPromises = plantNames.map(async (name) => {
+        const searchRes = await fetch(`http://localhost:3000/plants/search?query=${encodeURIComponent(name)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!searchRes.ok) return null;
+        const data = await searchRes.json();
+        // pick first result if exists
+        return data.data?.[0] || null;
+      });
+
+      const plantInfos = (await Promise.all(plantInfoPromises)).filter(Boolean);
+      setRecommendedPlants(plantInfos);
+    } catch (err) {
+      console.error("Failed to fetch recommended plant info:", err);
+    }
+  };
+
+  fetchRecommendedPlants();
+}, [user]);
+
   const handleSignOut = () => {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
-  // --- Search Trefle API ---
+  const handleAddWatering = async (plantId: string, amount: number) => {
+  if (!user) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:3000/plants/${plantId}/water`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ amount }),
+    });
+
+    if (!res.ok) throw new Error("Failed to add watering");
+
+    const updatedUser = await fetch("http://localhost:3000/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.json());
+
+    setUser(updatedUser);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
   const handleSearch = async () => {
     if (!searchQuery) return;
     try {
-      // Call your backend instead of Trefle directly
-      const token = sessionStorage.getItem("token"); // if your backend requires auth
+      const token = localStorage.getItem("token"); 
       const res = await fetch(
         `http://localhost:3000/plants/search?query=${encodeURIComponent(searchQuery)}`,
         {
@@ -129,29 +228,33 @@ export default function Dashboard() {
   };
   
 
-  // --- Add plant to user region ---
   const handleAddPlant = async (plant: any) => {
     if (!user) return;
     setAddingPlant(true);
 
     try {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:3000/plants/", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
-          name: plant.common_name || plant.scientific_name,
-          area: 1,
-          waterPerArea: 1,
+          name: plant.common_name || "Unknown Plant",
+          plantedAt: new Date().toISOString(),
+          imageUrl: plant.image_url,
+          slug: plant.slug,
+          apiId: plant.id,
+          family: plant.family,
+          scientificName: plant.scientific_name,
+    
         }),
       });
 
       if (!res.ok) throw new Error("Failed to add plant");
 
-      // Refresh user
       const updatedUser = await fetch("http://localhost:3000/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       }).then(r => r.json());
@@ -176,7 +279,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
-      {/* Header */}
       <header className="bg-white border-b-2 border-green-100 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -209,7 +311,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Navigation */}
       <nav className="bg-white border-b-2 border-green-100">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-6">
@@ -240,6 +341,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <WeatherCard weather={weather} loading={false} />
+              {user?.region && (
+                <SoilClimateCard 
+    soilType={user.region.soil_type} 
+    climate={user.region.climate} 
+  />
+
+              )}
+
               <div className="bg-white p-4 rounded-lg shadow">
                 <h2 className="font-bold text-green-700">Events</h2>
                 <ul className="list-disc pl-5">
@@ -250,14 +359,51 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-lg shadow">
-              <h2 className="font-bold text-green-700">Recommended Plants</h2>
-              <ul className="list-disc pl-5">
-                <li>Tomatoes</li>
-                <li>Basil</li>
-                <li>Peppers</li>
-              </ul>
+<div className="bg-white p-4 rounded-lg shadow">
+  <h2 className="text-xl font-semibold text-green-800 mb-4 flex items-center gap-2">
+        <Leaf size={24} className="text-green-600" />
+        Recommended Plants
+      </h2>
+      <p className="text-sm text-green-600 mb-4">
+        Based on your climate and soil conditions
+      </p>
+
+  {recommendedPlants.length > 0 ? (
+    <div className="flex flex-col gap-4">
+      {recommendedPlants.map((plant, i) => {
+        const emoji = "🌱"; // can later customize based on plant type
+        return (
+          <div
+            key={i}
+            className="border rounded-lg p-3 flex items-center gap-4 hover:shadow-lg transition-shadow"
+          >
+            {plant.image_url ? (
+              <img
+                src={plant.image_url}
+                alt={plant.common_name || plant.scientific_name}
+                className="w-24 h-24 object-cover rounded"
+              />
+            ) : (
+              <div className="w-24 h-24 bg-gray-200 flex items-center justify-center rounded text-gray-400">
+                No Image
+              </div>
+            )}
+            <div>
+              <p className="text-lg font-semibold text-green-800">
+                {emoji} {plant.common_name || plant.scientific_name}
+              </p>
+              <p className="text-sm text-gray-500">{plant.family}</p>
             </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <p className="text-gray-500">No recommended plants yet.</p>
+  )}
+</div>
+
+
           </div>
         ) : (
           <div className="bg-white p-4 rounded-lg shadow space-y-4">
@@ -280,7 +426,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Search Results */}
             {searchResults.length > 0 && (
   <div className="border rounded p-2 max-h-96 overflow-y-auto space-y-3">
     {searchResults.map((plant, i) => (
@@ -324,17 +469,19 @@ export default function Dashboard() {
 )}
 
             <ul className="list-disc pl-5">
-              {user?.region?.plants?.length ? (
-                user.region.plants.map((p, i) => (
-                  <li key={i}>
-                    {p.name} - Last watered:{" "}
-                    {p.lastWateredAt ? new Date(p.lastWateredAt).toLocaleDateString() : "Never"} - Next:{" "}
-                    {p.nextWateringAt ? new Date(p.nextWateringAt).toLocaleDateString() : "TBD"}
-                  </li>
-                ))
-              ) : (
-                <li>No plants added yet</li>
-              )}
+{user?.region?.plants?.length ? (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+    {user.region.plants.map((plant) => (
+      <PlantCard
+        key={plant._id || plant.apiId} //
+        plant={plant}
+        onAddWatering={handleAddWatering} // function to handle watering POST
+      />
+    ))}
+  </div>
+) : (
+  <p className="text-gray-500 mt-4">No plants added yet</p>
+)}
             </ul>
           </div>
         )}

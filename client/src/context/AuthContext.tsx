@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Persist token to sessionStorage
   useEffect(() => {
     if (session?.token) {
-      sessionStorage.setItem('token', session.token);
+      localStorage.setItem('token', session.token);
     } else {
-      sessionStorage.removeItem('token');
+      localStorage.removeItem('token');
     }
   }, [session]);
 

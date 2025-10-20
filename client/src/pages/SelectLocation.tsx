@@ -34,7 +34,7 @@ export default function SelectLocationPage() {
     setLoading(true);
 
     try {
-      const token = sessionStorage.getItem('token');
+      const token = localStorage.getItem('token');
       if (!token) throw new Error('User not authenticated');
 
       const response = await axios.post(

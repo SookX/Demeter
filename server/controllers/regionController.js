@@ -34,7 +34,6 @@ async function getClimateData(lat, lon) {
       const user = await User.findOne({ id: decoded.id });
       if (!user) return next(new AppError('User not found', 404));
   
-      // Soil type API
       const soil_response = await axios.get('https://api.openepi.io/soil/type', {
         params: {
           lon: region.lon,
@@ -45,7 +44,6 @@ async function getClimateData(lat, lon) {
   
       const soil_type = soil_response.data?.properties?.most_probable_soil_type || 'Unknown';
   
-      // Climate API
       const climate_response = await axios.get(`http://climateapi.scottpinkelman.com/api/v1/location/${region.lat}/${region.lon}`, {
         headers: { Accept: 'application/json' },
       });
@@ -55,7 +53,6 @@ async function getClimateData(lat, lon) {
       const koppen_geiger_zone = climateData.return_values[0].koppen_geiger_zone || 'Unknown';
       const zone_description = climateData.return_values[0].zone_description || 'Unknown';
   
-      // Assign region with soil and climate info
       user.region = {
         ...region,
         soil_type,
