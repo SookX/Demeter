@@ -10,18 +10,18 @@ passport.use(new GoogleStrategy(
   },
   async(_accessToken, _refreshToken, profile, done) => {
     try{
-    const userData = {
-      googleId: profile.id,
-      username: profile.displayName,
-      email: profile.emails?.[0]?.value?.toLowerCase(),
-    };
+        const userData = {
+          googleId: profile.id,
+          username: profile.displayName, 
+          email: profile.emails?.[0]?.value?.toLowerCase(),
+        };
 
-    let user = await User.findOneAndUpdate(
-      { googleId: profile.id },
-      { $setOnInsert: userData },
-      { new: true, upsert: true }
-    );
-    return done(null, user);
+        let user = await User.findOneAndUpdate(
+          { googleId: profile.id },
+          { $setOnInsert: userData },
+          { new: true, upsert: true }
+        );
+        return done(null, user);
 
     } catch(err){
       return done(err);
