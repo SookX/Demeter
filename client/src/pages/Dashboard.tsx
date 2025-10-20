@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, MapPin, Plus } from "lucide-react";
 import WeatherCard from "../components/WeatherCard";
+import EventCard from "../components/EventCard";
 import PlantCard from "../components/PlantCard";
+
 import SoilClimateCard from "../components/SoilClimateCard";
 import { Leaf, Info } from 'lucide-react';
 
@@ -174,6 +176,36 @@ export default function Dashboard() {
   fetchRecommendedPlants();
 }, [user]);
 
+useEffect(() => {
+  const initializeEvents = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return navigate("/login");
+
+    try {
+      // 1️⃣ Generate events
+      await Promise.all([
+        fetch("http://localhost:3000/events/generate-news", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("http://localhost:3000/events/generate-tips", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("http://localhost:3000/events/generate-reminders", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      console.log("Events generated successfully.");
+    } catch (err) {
+      console.error("Failed to generate events:", err);
+    }
+  };
+
+  initializeEvents();
+}, []);
+
   const handleSignOut = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -338,25 +370,18 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === "dashboard" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <WeatherCard weather={weather} loading={false} />
-              {user?.region && (
-                <SoilClimateCard 
-    soilType={user.region.soil_type} 
-    climate={user.region.climate} 
-  />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2 space-y-6">
+                        <WeatherCard weather={weather} loading={false} />
+                        {user?.region && (
+                          <SoilClimateCard 
+              soilType={user.region.soil_type} 
+              climate={user.region.climate} 
+            />
 
               )}
 
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h2 className="font-bold text-green-700">Events</h2>
-                <ul className="list-disc pl-5">
-                  <li>Water your plants tomorrow</li>
-                  <li>Check soil moisture today</li>
-                  <li>Plant companion herbs next to tomatoes</li>
-                </ul>
-              </div>
+                    <EventCard/>
             </div>
 
 <div className="bg-white p-4 rounded-lg shadow">

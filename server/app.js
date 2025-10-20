@@ -12,6 +12,8 @@ const authRouter = require("./routes/authRouter");
 const regionRouter = require("./routes/regionRouter");
 const plantRouter = require("./routes/plantRouter");
 const weatherRouter = require("./routes/weatherRoter");
+const eventRouter = require("./routes/eventRouter");
+
 const globalErrorHandler = require('./controllers/errorController');
 
 const app = express();
@@ -35,6 +37,7 @@ app.use("/auth", authRouter);
 app.use("/region", regionRouter);
 app.use("/plants", plantRouter);
 app.use("/weather", weatherRouter);
+app.use("/events", eventRouter);
 
 //  home
 app.get("/", (req, res) => {

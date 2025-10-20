@@ -25,6 +25,13 @@ const plantSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+  const eventSchema = new mongoose.Schema({
+    eventType: { type: String, required: true },
+    eventDate: { type: Date, required: true },
+    markRead: { type: Boolean, default: false },
+    details: { type: String },
+  });
+
   const UserSchema = new mongoose.Schema(
     {
       id: { type: Number, unique: true, index: true },
@@ -64,7 +71,12 @@ const plantSchema = new mongoose.Schema({
           zone_description: { type: String },
         },
         plants: [plantSchema], 
+        events: {
+          last_created: { type: Date, default: null },
+          event_list: [eventSchema],
       },
+      },
+
     },
     { timestamps: true }
   );
