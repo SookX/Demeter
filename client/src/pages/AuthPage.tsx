@@ -36,13 +36,14 @@ export default function AuthPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+   const handleGoogleSignIn = async () => {
     setError('');
     setLoading(true);
     try {
-      const { error } = await signInWithGoogle();
+      // preserve where the user is; server will send us back here
+      const { error } = await signInWithGoogle(window.location.pathname + window.location.search);
       if (error) throw error;
-      navigate('/dashboard'); 
+      // no navigate here — browser leaves for Google and returns via redirect
     } catch (err: any) {
       setError(err.message || 'An error occurred');
       setLoading(false);

@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+
+
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -16,7 +19,7 @@ L.Icon.Default.mergeOptions({
 
 export default function SelectLocationPage() {
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(null);
-
+  const navigate = useNavigate(); // Initialize navigate
   const MapClickHandler = () => {
     useMapEvents({
       click(e) {
@@ -30,6 +33,7 @@ export default function SelectLocationPage() {
     if (!marker) return;
     localStorage.setItem('selectedLocation', JSON.stringify(marker));
     alert(`🌱 Location saved: ${marker.lat.toFixed(2)}, ${marker.lng.toFixed(2)} 🌎`);
+    navigate('/');
   };
 
   return (

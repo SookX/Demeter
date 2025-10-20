@@ -8,10 +8,14 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 require("../utils/passportConfig");
 
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"], session: false })
-);
+router.get("/google", (req, res, next) => {
+  const state = req.query.redirect || "/";
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    state,
+  })(req, res, next);
+});
 
 router.get(
   "/google/callback",
@@ -19,14 +23,24 @@ router.get(
   catchAsync(async (req, res) => {
     if (!req.user) throw new AppError("Google login failed", 401);
 
+    // Create JWT same as email/password flow
     const token = createJWT(req.user.id, req.user.username);
 
-    res.status(200).json({
-      success: true,
-      message: "Google login successful",
-      token,
-      user: { id: req.user.id, username: req.user.username },
-    });
+    // Where to send the SPA after OAuth
+    const appBase = process.env.CLIENT_APP_URL || "http://localhost:5173";
+    // Preserve intended redirect path from the initiation step
+    const redirectPath = req.query.state || "/";
+
+    // Put sensitive info in the URL hash (not query string)
+    const url = new URL(redirectPath, appBase);
+    url.hash =
+      `#token=${encodeURIComponent(token)}` +
+      `&id=${encodeURIComponent(req.user.id)}` +
+      `&username=${encodeURIComponent(req.user.username)}` +
+      (req.user.email ? `&email=${encodeURIComponent(req.user.email)}` : "");
+
+    // Send browser back to the SPA with token in the fragment
+    res.redirect(url.toString());
   })
 );
 
