@@ -26,7 +26,7 @@ router.get(
 
     const token = createJWT(req.user.id, req.user.username);
 
-    const appBase = process.env.CLIENT_APP_URL || "http://localhost:5173";
+    const appBase = process.env.CLIENT_APP_URL || "https://demeter-9xs8.onrender.com";
     const redirectPath = req.query.state || "/";
 
     const url = new URL(redirectPath, appBase);
