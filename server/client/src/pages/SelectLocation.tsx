@@ -7,6 +7,7 @@ import { MapPin } from 'lucide-react';
 import axios from 'axios';
 
 // Fix Leaflet default marker icons
+delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
