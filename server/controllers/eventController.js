@@ -79,7 +79,7 @@ exports.generateNewsWithLLM = async (req, res) => {
       return res.status(400).json({ error: "User has no coordinates" });
     }
 
-    const forecastRes = await axios.get("http://localhost:3000/weather/forecast", {
+    const forecastRes = await axios.get("https://demeter-9xs8.onrender.com/weather/forecast", {
       params: { lat, lon },
     });
     const forecastData = forecastRes.data;
@@ -171,7 +171,7 @@ exports.generateReminders = async (req, res) => {
   try {
     const user = await getUserFromToken(req);
 
-    const response = await axios.get("http://localhost:3000/plants/plant/water", {
+    const response = await axios.get("https://demeter-9xs8.onrender.com/plants/plant/water", {
       headers: { Authorization: req.headers.authorization },
     });
 
@@ -223,7 +223,7 @@ exports.generateReminders = async (req, res) => {
 
 exports.generateTips = async (req, res) => {
   try {
-    const userRes = await axios.get("http://localhost:3000/auth/me", {
+    const userRes = await axios.get("https://demeter-9xs8.onrender.com/auth/me", {
       headers: { Authorization: req.headers.authorization },
     });
     

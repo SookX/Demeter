@@ -13,7 +13,7 @@ export default function AuthPage() {
 
   const navigate = useNavigate();
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/auth';
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://demeter-9xs8.onrender.com/auth';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

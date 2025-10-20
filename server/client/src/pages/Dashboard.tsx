@@ -95,7 +95,7 @@ export default function Dashboard() {
       if (!token) return navigate("/login");
 
       try {
-        const userRes = await fetch("http://localhost:3000/auth/me", {
+        const userRes = await fetch("https://demeter-9xs8.onrender.com/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!userRes.ok) throw new Error("Failed to fetch user");
@@ -110,13 +110,13 @@ export default function Dashboard() {
         const { lat, lon } = userData.region;
 
         const currentRes = await fetch(
-          `http://localhost:3000/weather/current?lat=${lat}&lon=${lon}`,
+          `https://demeter-9xs8.onrender.com/weather/current?lat=${lat}&lon=${lon}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const currentData = await currentRes.json();
 
         const dailyRes = await fetch(
-          `http://localhost:3000/weather/daily?lat=${lat}&lon=${lon}`,
+          `https://demeter-9xs8.onrender.com/weather/daily?lat=${lat}&lon=${lon}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const dailyData: ForecastDay[] = await dailyRes.json();
@@ -159,7 +159,7 @@ export default function Dashboard() {
 
       try {
         const token = localStorage.getItem("token");
-        const recRes = await fetch("http://localhost:3000/plants/recommendations", {
+        const recRes = await fetch("https://demeter-9xs8.onrender.com/plants/recommendations", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const recData = await recRes.json();
@@ -169,7 +169,7 @@ export default function Dashboard() {
           await Promise.all(
             plantNames.map(async (name) => {
               const searchRes = await fetch(
-                `http://localhost:3000/plants/search?query=${encodeURIComponent(name)}`,
+                `https://demeter-9xs8.onrender.com/plants/search?query=${encodeURIComponent(name)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               if (!searchRes.ok) return null;
@@ -199,7 +199,7 @@ export default function Dashboard() {
     setAddingPlant(true);
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:3000/plants/", {
+      await fetch("https://demeter-9xs8.onrender.com/plants/", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +213,7 @@ export default function Dashboard() {
         }),
       });
 
-      const updatedUser: User = await fetch("http://localhost:3000/auth/me", {
+      const updatedUser: User = await fetch("https://demeter-9xs8.onrender.com/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
       setUser(updatedUser);

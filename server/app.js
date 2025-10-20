@@ -21,7 +21,7 @@ const path = require('path')
 
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: 'https://demeter-9xs8.onrender.com', 
   credentials: true,               
 }));app.use(cookieParser());
 app.use(express.json());
