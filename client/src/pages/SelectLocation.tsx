@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { MapPin } from 'lucide-react';
+import axios from 'axios';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -15,7 +17,9 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function SelectLocationPage() {
+  const navigate = useNavigate();
   const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const MapClickHandler = () => {
     useMapEvents({
@@ -26,10 +30,32 @@ export default function SelectLocationPage() {
     return null;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!marker) return;
-    localStorage.setItem('selectedLocation', JSON.stringify(marker));
-    alert(`🌱 Location saved: ${marker.lat.toFixed(2)}, ${marker.lng.toFixed(2)} 🌎`);
+    setLoading(true);
+
+    try {
+      const token = sessionStorage.getItem('token');
+      if (!token) throw new Error('User not authenticated');
+
+      const response = await axios.post(
+        'http://localhost:3000/region/',
+        { region: { lat: marker.lat, lon: marker.lng } },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data?.status === 'success') {
+        alert(`🌱 Location saved successfully! Redirecting...`);
+        navigate('/'); // Redirect to dashboard
+      } else {
+        alert('Failed to save location. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error saving location:', error.response?.data || error.message);
+      alert('Error saving location. Please check console for details.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,10 +90,10 @@ export default function SelectLocationPage() {
       <div className="w-full max-w-4xl flex justify-center mt-4">
         <button
           onClick={handleSubmit}
-          disabled={!marker}
+          disabled={!marker || loading}
           className="px-8 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 disabled:opacity-50 text-lg font-semibold transition-all"
         >
-          🌱 Save Location & Continue
+          {loading ? 'Saving...' : '🌱 Save Location & Continue'}
         </button>
       </div>
 

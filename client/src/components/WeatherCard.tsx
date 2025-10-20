@@ -103,9 +103,9 @@ export default function WeatherCard({ weather, loading }: WeatherCardProps) {
               key={index}
               className="bg-white bg-opacity-30 rounded-lg p-3 text-center hover:bg-opacity-40 transition-all"
             >
-              <div className="text-xs text-white mb-1">{formatDate(day.date)}</div>
+              <div className="text-xs text-black mb-1">{formatDate(day.date)}</div>
               <div className="text-3xl mb-2">{day.icon}</div>
-              <div className="text-sm font-semibold text-white">
+              <div className="text-sm font-semibold text-black">
                 {day.tempMax}° / {day.tempMin}°
               </div>
             </div>

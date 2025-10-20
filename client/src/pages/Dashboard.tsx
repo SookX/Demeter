@@ -129,7 +129,7 @@ export default function Dashboard({ location }: DashboardProps) {
           <div className="flex items-center gap-3">
             <span className="text-3xl">🌱</span>
             <div>
-              <h1 className="text-2xl font-bold text-green-800">AgriSmart</h1>
+              <h1 className="text-2xl font-bold text-green-800">Demeter</h1>
               <div className="flex items-center gap-1 text-sm text-green-600">
                 <MapPin size={14} />
                 <span>{dummyLocation.name}</span>

@@ -4,6 +4,8 @@ const router = express.Router();
 const plantController = require("../controllers/plantController");
 
 router.post("/", plantController.addPlant);
+router.get("/", plantController.getPlants);
+
 router.put("/:plantId/water", plantController.waterPlant);
-router.delete("/:plantId", plantController.removePlant);
+router.get("/plant/water", plantController.getPlantsNeedingWater); // Returns plants that need watering
 module.exports = router;
