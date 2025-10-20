@@ -2,7 +2,7 @@ const User = require("../schemas/userSchema");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const Groq = require("groq-sdk");
-const AppError = require("../utils/AppError");
+const AppError = require("../utils/appError");
 const client = new Groq();
 
 // Helper to get user from token

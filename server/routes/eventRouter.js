@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const eventController = require('../controllers/eventController');
-const { route } = require('./authRouter');
 
 router.get('/', eventController.getEvents);
 router.post('/', eventController.addEvent);

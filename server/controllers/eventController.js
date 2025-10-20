@@ -1,5 +1,5 @@
 const User = require("../schemas/userSchema");
-const AppError = require("../utils/AppError");
+const AppError = require("../utils/appError");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const Groq = require("groq-sdk");

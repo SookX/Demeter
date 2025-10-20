@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const User = require("../schemas/userSchema");
 const { createJWT, verifyJWT } = require("../utils/jwtUtils");
 const catchAsync = require("../utils/catchAsync");
-const AppError = require("../utils/AppError");
+const AppError = require("../utils/appError");
 const jwt = require('jsonwebtoken');
 require("../utils/passportConfig");
 
