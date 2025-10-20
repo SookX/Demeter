@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema(
     googleId: { type: String, unique: true, sparse: true },
     username: {
       type: String,
-      required: [true, "Please enter a username"],
+      required: [function () { return !this.googleId; }, "Please enter a username"],
       unique: true,
       trim: true,
     },
