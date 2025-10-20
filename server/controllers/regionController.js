@@ -1,6 +1,6 @@
 const User = require('../schemas/userSchema');
 const jwt = require('jsonwebtoken');
-const AppError = require('../utils/appError');
+const AppError = require('../utils/AppError');
 const axios = require('axios');
 
 async function getClimateData(lat, lon) {

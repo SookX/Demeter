@@ -3,14 +3,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 import SelectLocationPage from './pages/SelectLocation'
 import AuthPage from './pages/AuthPage'
-import { AuthProvider } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 
 function App() {
 
 
   return (
-    <AuthProvider>
       <BrowserRouter>
           <Routes>
           <Route path='/login' element={<AuthPage/>} />
@@ -18,7 +16,6 @@ function App() {
           <Route path='/' element={<Dashboard/>} />
           </Routes>
       </BrowserRouter>
-    </AuthProvider>
 
   )
 }

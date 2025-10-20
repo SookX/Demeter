@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client", "node"],
+    "skipLibCheck": true,
+    "allowJs": true,
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    /* Relaxed linting */
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false,
+      "noImplicitAny": false,
+  },
+  "include": ["src"]
+}

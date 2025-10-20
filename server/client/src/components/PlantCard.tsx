@@ -8,7 +8,7 @@ interface Watering {
 }
 
 interface Plant {
-  _id: string;
+  _id?: string;
   name: string;
   scientificName?: string;
   family?: string;
@@ -21,7 +21,7 @@ interface Plant {
 }
 
 interface PlantCardProps {
-  plant: Plant;
+  plant: Plant & { waterings?: Watering[] }; 
   onAddWatering: (plantId: string, amount: number) => void;
 }
 

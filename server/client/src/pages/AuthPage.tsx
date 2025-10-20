@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -11,8 +11,9 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/auth';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,16 +22,22 @@ export default function AuthPage() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, username);
-        if (error) throw error;
+        const res = await axios.post(`${API_BASE}/register`, {
+          email,
+          password,
+          username,
+        });
+        const { token } = res.data;
+        localStorage.setItem('token', token);
         navigate('/'); 
       } else {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
+        const res = await axios.post(`${API_BASE}/login`, { email, password });
+        const { token } = res.data;
+        localStorage.setItem('token', token);
         navigate('/');
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.response?.data?.message || err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -40,9 +47,7 @@ export default function AuthPage() {
     setError('');
     setLoading(true);
     try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-      navigate('/dashboard'); 
+      window.location.href = `${API_BASE}/google`;
     } catch (err: any) {
       setError(err.message || 'An error occurred');
       setLoading(false);

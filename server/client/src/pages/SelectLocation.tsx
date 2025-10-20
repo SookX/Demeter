@@ -1,62 +1,73 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { MapPin } from "lucide-react";
-import axios from "axios";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L, { LatLngExpression } from 'leaflet';
+import { MapPin } from 'lucide-react';
+import axios from 'axios';
 
-delete L.Icon.Default.prototype._getIconUrl; 
+// Fix Leaflet default marker icons
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-function ClickHandler({ setMarker }: { setMarker: (pos: { lat: number; lng: number }) => void }) {
-  useMapEvents({
-    click(e) {
-      setMarker({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
-  return null;
+interface MarkerPosition {
+  lat: number;
+  lng: number;
 }
 
 export default function SelectLocationPage() {
   const navigate = useNavigate();
-  const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(null);
+  const [marker, setMarker] = useState<MarkerPosition | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Map click handler component
+  const MapClickHandler = () => {
+    useMapEvents({
+      click(e) {
+        setMarker({ lat: e.latlng.lat, lng: e.latlng.lng });
+      },
+    });
+    return null;
+  };
 
   const handleSubmit = async () => {
     if (!marker) return;
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated");
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('User not authenticated');
 
       const response = await axios.post(
-        "http://localhost:3000/region/",
+        'http://localhost:3000/region/',
         { region: { lat: marker.lat, lon: marker.lng } },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data?.status === "success") {
+      if (response.data?.status === 'success') {
         alert(`🌱 Location saved successfully! Redirecting...`);
-        navigate("/");
+        navigate('/'); // Redirect to dashboard
       } else {
-        alert("Failed to save location. Please try again.");
+        alert('Failed to save location. Please try again.');
       }
     } catch (error: any) {
-      console.error("Error saving location:", error.response?.data || error.message);
-      alert("Error saving location. Please check console for details.");
+      console.error('Error saving location:', error.response?.data || error.message);
+      alert('Error saving location. Check console for details.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Convert marker to LatLngExpression for Leaflet
+  const markerPosition: LatLngExpression | null = marker
+    ? [marker.lat, marker.lng]
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-green-50 via-white to-emerald-50 space-y-6">
@@ -72,16 +83,18 @@ export default function SelectLocationPage() {
 
       <div className="w-full max-w-4xl h-[500px] rounded-3xl overflow-hidden shadow-2xl border-4 border-green-100">
         <MapContainer
-          center={marker ? [marker.lat, marker.lng] : [20, 0]}
-          zoom={marker ? 10 : 2}
-          style={{ height: "100%", width: "100%" }}
+          // @ts-expect-error: react-leaflet typings don't include center
+          center={[20, 0] as LatLngExpression}
+          zoom={2}
+          style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
+            // @ts-expect-error react-leaflet v4 typing quirk
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
-          <ClickHandler setMarker={setMarker} />
-          {marker && <Marker position={[marker.lat, marker.lng]} />}
+          <MapClickHandler />
+          {markerPosition && <Marker position={markerPosition} />}
         </MapContainer>
       </div>
 
@@ -97,7 +110,7 @@ export default function SelectLocationPage() {
           disabled={!marker || loading}
           className="px-8 py-3 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 disabled:opacity-50 text-lg font-semibold transition-all"
         >
-          {loading ? "Saving..." : "🌱 Save Location & Continue"}
+          {loading ? 'Saving...' : '🌱 Save Location & Continue'}
         </button>
       </div>
 

@@ -102,27 +102,77 @@ exports.waterPlant = async (req, res) => {
     const { plantId } = req.params;
     const { amount } = req.body;
 
-    
-
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
     const plant = user.region.plants.id(plantId);
     const now = new Date();
+
+    // Add the watering event
     plant.waterings.push({ date: now, amount });
     plant.lastWateredAt = now;
-    plant.nextWateringAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    // --- Gather user data for prediction ---
+    const soilType = user.region.soil_type || "Unknown";
+    const climate = user.region.climate?.zone_description || "Unknown";
+    const plantName = plant.name;
+
+    // Optionally include today’s news/reminders/tips
+    const today = new Date();
+    const todayEvents = (user.events || []).filter(
+      e => new Date(e.eventDate).toDateString() === today.toDateString()
+    );
+    const relevantEvents = todayEvents.map(e => `${e.eventType}: ${e.details}`).join("\n") || "No events";
+
+    // --- Prepare prompt for LLM ---
+    const prompt = `
+      You are a friendly plant care assistant.
+      A user has a plant "${plantName}".
+      Soil type: ${soilType}
+      Climate: ${climate}
+      Recent watering: ${amount} units on ${now.toISOString()}
+      Relevant events today: ${relevantEvents}
+
+      Predict the next watering date (ISO 8601 format) for this plant.
+      Respond **only** with an ISO date string.
+    `;
+
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: "You are an intelligent plant watering assistant." },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    let nextWatering = new Date(now.getTime() + 24 * 60 * 60 * 1000); // fallback 24h
+    try {
+      const predictedDateStr = completion.choices[0].message.content.trim();
+      const predictedDate = new Date(predictedDateStr);
+      if (!isNaN(predictedDate.getTime())) {
+        nextWatering = predictedDate;
+      }
+    } catch (err) {
+      console.warn("LLM returned invalid date, using fallback", err);
+    }
+
+    plant.nextWateringAt = nextWatering;
 
     await user.save();
-    res.json({ message: "Watering added" });
+
+    res.json({
+      message: "Watering added",
+      lastWateredAt: plant.lastWateredAt,
+      nextWateringAt: plant.nextWateringAt,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
+
 exports.getPlantsNeedingWater = async (req, res, next) => {
     try {
-      // 1️⃣ Get user from token
       const token = req.headers.authorization?.split(" ")[1];
       if (!token) return next(new AppError("No token provided", 401));
   
@@ -132,7 +182,6 @@ exports.getPlantsNeedingWater = async (req, res, next) => {
       const user = await User.findOne({ id: decoded.id });
       if (!user) return next(new AppError("User not found", 404));
   
-      // 2️⃣ Sort plants by nextWateringAt ascending
       const plants = user.region.plants || [];
       plants.sort((a, b) => {
         if (!a.nextWateringAt) return 1;

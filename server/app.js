@@ -19,6 +19,7 @@ const globalErrorHandler = require('./controllers/errorController');
 const app = express();
 const path = require('path')
 
+
 app.use(cors({
   origin: 'http://localhost:5173', 
   credentials: true,               
@@ -33,25 +34,20 @@ if(process.env.NODE_ENV === 'development') {
 app.use(passport.initialize());
 
 // Routes
+
+app.use(express.static(path.join(__dirname, './client/dist')));
+
 app.use("/auth", authRouter);
 app.use("/region", regionRouter);
 app.use("/plants", plantRouter);
 app.use("/weather", weatherRouter);
 app.use("/events", eventRouter);
 
-//  home
-app.get("/", (req, res) => {
-  const token = req.cookies?.jwt;
-  let decoded = null;
-  try {
-    if (token) decoded = verifyJWT(token);
-  } catch {}
-  res.status(200).send("Home");
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, './client/dist/index.html'));
 });
-
 app.use(globalErrorHandler);
-
-app.use(express.static(path.join(__dirname, '/client/dist')))
 
 
 module.exports = app;
