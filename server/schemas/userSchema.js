@@ -46,8 +46,8 @@ const UserSchema = new mongoose.Schema(
       },
       soil_type: {
         type: String,
-      },
-    }
+        required: false,
+      },    }
   },
   { timestamps: true }
 );

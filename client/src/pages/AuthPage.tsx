@@ -24,11 +24,11 @@ export default function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(email, password, username);
         if (error) throw error;
-        navigate('/dashboard'); // Navigate to dashboard after sign-up
+        navigate('/'); // Navigate to dashboard after sign-up
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        navigate('/dashboard'); // Navigate to dashboard after sign-in
+        navigate('/'); // Navigate to dashboard after sign-in
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');

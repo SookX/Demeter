@@ -40,7 +40,10 @@ const getRegion = async (req, res, next) => {
 
     const user = await User.findOne({ id: decoded.id });
     if (!user) return next(new AppError('User not found', 404));
-    if (!user.region) return next(new AppError('Region not found', 404));
+    if (!user.region.x || Object.keys(user.region).length === 0) {
+        return next(new AppError('Region not found', 404));
+    }
+      
 
     res.status(200).json({
       status: 'success',

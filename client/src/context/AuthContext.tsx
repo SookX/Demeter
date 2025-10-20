@@ -44,6 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Persist token to sessionStorage
+  useEffect(() => {
+    if (session?.token) {
+      sessionStorage.setItem('token', session.token);
+    } else {
+      sessionStorage.removeItem('token');
+    }
+  }, [session]);
+
   const loadProfile = async (userId: string) => {
     try {
       const { data } = await api.get(`/profile/${userId}`);
@@ -56,9 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const { data } = await api.post('/login', { email, password });
-      console.log(data)
       setUser(data.user);
-      setSession(data);
+      setSession(data); // triggers sessionStorage update
       await loadProfile(data.user.id);
       return { error: null };
     } catch (err: any) {
@@ -71,10 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await api.post('/register', {
         email,
         password,
-        username: username,
+        username,
       });
       setUser(data.user);
-      setSession(data);
+      setSession(data); // triggers sessionStorage update
       setProfile(data.profile);
       return { error: null };
     } catch (err: any) {
@@ -99,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       setProfile(null);
-      setSession(null);
+      setSession(null); // clears token from sessionStorage via useEffect
     }
   };
 
