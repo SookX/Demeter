@@ -1,5 +1,6 @@
 const User = require("../schemas/userSchema");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
 
 // Helper to get user from token
 const getUserFromToken = async (req) => {
@@ -16,6 +17,18 @@ const getUserFromToken = async (req) => {
   if (!user) throw new Error("User not found");
 
   return user;
+};
+
+exports.searchForPlant = async (req, res) => {
+  const { query } = req.query;
+    const response = await axios.get('https://trefle.io/api/v1/plants/search', {
+      params: {
+        token: process.env.TREFLE_API_KEY,
+        q: query,
+      },
+    });
+    res.json(response.data);
+  
 };
 
 // Add a new plant

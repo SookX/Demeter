@@ -3,9 +3,10 @@ const router = express.Router();
 const passport = require("passport");
 const bcrypt = require("bcrypt");
 const User = require("../schemas/userSchema");
-const { createJWT } = require("../utils/jwtUtils");
+const { createJWT, verifyJWT } = require("../utils/jwtUtils");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const jwt = require('jsonwebtoken');
 require("../utils/passportConfig");
 
 router.get("/google", (req, res, next) => {
@@ -107,4 +108,21 @@ router.post(
   })
 );
 
+router.get("/me", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = verifyJWT(token);
+    if (!decoded || !decoded.id) return res.status(401).json({ message: "Invalid token" });
+
+    const user = await User.findOne({ id: decoded.id }).select('-password');
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in /me:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;

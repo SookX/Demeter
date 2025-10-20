@@ -38,6 +38,7 @@
           function () { return !this.googleId; },
           "Please enter a password",
         ],
+        hidden: true,
       },
       region: {
         lat: { type: Number },

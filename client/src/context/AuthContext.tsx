@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username,
       });
       setUser(data.user);
-      setSession(data); // triggers sessionStorage update
+      setSession(data); 
       setProfile(data.profile);
       return { error: null };
     } catch (err: any) {
