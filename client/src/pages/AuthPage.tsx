@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -12,6 +13,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp, signInWithGoogle } = useAuth();
+  const navigate = useNavigate(); // Initialize navigate
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +24,12 @@ export default function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(email, password, username);
         if (error) throw error;
+        navigate('/dashboard'); // Navigate to dashboard after sign-up
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
+        navigate('/dashboard'); // Navigate to dashboard after sign-in
       }
-      alert('Success!');
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -40,6 +43,7 @@ export default function AuthPage() {
     try {
       const { error } = await signInWithGoogle();
       if (error) throw error;
+      navigate('/dashboard'); // Navigate to dashboard after Google sign-in
     } catch (err: any) {
       setError(err.message || 'An error occurred');
       setLoading(false);
@@ -55,7 +59,7 @@ export default function AuthPage() {
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h2>
           <p className="text-green-600 mt-1">
-            {isSignUp ? 'Join AgriSmart today' : 'Sign in to continue'}
+            {isSignUp ? 'Join Demeter today' : 'Sign in to continue'}
           </p>
         </div>
 

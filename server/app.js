@@ -9,6 +9,7 @@ require("./utils/passportConfig");
 
 const { verifyJWT } = require("./utils/jwtUtils");
 const authRouter = require("./routes/authRouter");
+const regionRouter = require("./routes/regionRouter");
 
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -30,6 +31,7 @@ app.use(passport.initialize());
 
 // Routes
 app.use("/auth", authRouter);
+app.use("/region", regionRouter);
 
 //  home
 app.get("/", (req, res) => {

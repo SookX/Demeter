@@ -34,6 +34,20 @@ const UserSchema = new mongoose.Schema(
         "Please enter a password",
       ],
     },
+    region: {
+      x: {
+        type: Number,
+        required: false,
+
+      },
+      y: {
+        type: Number,
+        required: false,
+      },
+      soil_type: {
+        type: String,
+      },
+    }
   },
   { timestamps: true }
 );
