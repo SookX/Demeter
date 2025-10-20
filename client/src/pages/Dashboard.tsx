@@ -5,15 +5,14 @@ import { LogOut, MapPin } from 'lucide-react';
 import WeatherCard from '../components/WeatherCard';
 
 interface WeatherData {
-    temperature: number;
-    description: string;
-    feelsLike: number;
-    humidity: number;
-    windSpeed: number;
-    icon: string;
-    forecast: { date: string; icon: string; tempMax: number; tempMin: number }[];
-  }
-  
+  temperature: number;
+  description: string;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  icon: string;
+  forecast: { date: string; icon: string; tempMax: number; tempMin: number }[];
+}
 
 interface DashboardProps {
   location?: { name: string; latitude: number; longitude: number };
@@ -26,14 +25,20 @@ interface UserLocation {
   soil_type: string;
 }
 
+interface Region {
+  x: number;
+  y: number;
+  soil_type: string;
+}
+
 export default function Dashboard({ location }: DashboardProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'plants'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [region, setRegion] = useState<Region | null>(null);
 
-  // Dummy profile and location
-  const dummyProfile = { full_name: 'Jane Doe', email: 'jane@example.com' };
+  const dummyProfile = { full_name: 'JohnDoe', email: 'jane@example.com' };
   const dummyLocation: UserLocation = {
     name: location?.name || 'Springfield',
     latitude: 0,
@@ -42,12 +47,40 @@ export default function Dashboard({ location }: DashboardProps) {
   };
 
   useEffect(() => {
-    const checkLoginAndLoad = () => {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        navigate('/login'); // redirect to login if no token
-      } else {
-        // Simulate fetching weather and user data
+    const checkLoginAndFetchRegion = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          navigate('/login'); 
+          return;
+        }
+
+        const response = await fetch('http://localhost:3000/region/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.status === 404) {
+          navigate('/locationSelect');
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch region');
+        }
+
+        const data = await response.json();
+
+        if (!data.region || Object.keys(data.region).length === 0) {
+          navigate('/locationSelect');
+          return;
+        }
+
+        setRegion(data.region);
+
         const dummyWeather: WeatherData = {
           temperature: 24,
           description: 'Sunny',
@@ -65,15 +98,18 @@ export default function Dashboard({ location }: DashboardProps) {
         };
 
         setWeather(dummyWeather);
-        setTimeout(() => setLoading(false), 500); // simulate loading delay
+      } catch (error) {
+        console.error('Error fetching region:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkLoginAndLoad();
+    checkLoginAndFetchRegion();
   }, [navigate]);
 
   const handleSignOut = () => {
-    sessionStorage.removeItem('token'); // remove token on sign out
+    sessionStorage.removeItem('token');
     navigate('/login');
   };
 
@@ -87,6 +123,7 @@ export default function Dashboard({ location }: DashboardProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
+      {/* Header */}
       <header className="bg-white border-b-2 border-green-100 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -115,6 +152,7 @@ export default function Dashboard({ location }: DashboardProps) {
         </div>
       </header>
 
+      {/* Navigation Tabs */}
       <nav className="bg-white border-b-2 border-green-100">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-6">
@@ -140,14 +178,13 @@ export default function Dashboard({ location }: DashboardProps) {
         </div>
       </nav>
 
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'dashboard' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Weather Card */}
               <WeatherCard weather={weather} loading={false} />
 
-              {/* Events Section */}
               <div className="bg-white p-4 rounded-lg shadow">
                 <h2 className="font-bold text-green-700">Events</h2>
                 <ul className="list-disc pl-5">
@@ -158,7 +195,6 @@ export default function Dashboard({ location }: DashboardProps) {
               </div>
             </div>
 
-            {/* Recommended Plants Section */}
             <div className="bg-white p-4 rounded-lg shadow">
               <h2 className="font-bold text-green-700">Recommended Plants</h2>
               <ul className="list-disc pl-5">
@@ -169,7 +205,6 @@ export default function Dashboard({ location }: DashboardProps) {
             </div>
           </div>
         ) : (
-          // Plants Tab
           <div className="bg-white p-4 rounded-lg shadow">
             <h2 className="font-bold text-green-700">My Plants</h2>
             <ul className="list-disc pl-5">

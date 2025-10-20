@@ -1,8 +1,7 @@
-// pages/AuthPage.tsx
 import { useState } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom'; 
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,7 +12,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp, signInWithGoogle } = useAuth();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,11 +23,11 @@ export default function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(email, password, username);
         if (error) throw error;
-        navigate('/'); // Navigate to dashboard after sign-up
+        navigate('/'); 
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        navigate('/'); // Navigate to dashboard after sign-in
+        navigate('/');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -43,7 +42,7 @@ export default function AuthPage() {
     try {
       const { error } = await signInWithGoogle();
       if (error) throw error;
-      navigate('/dashboard'); // Navigate to dashboard after Google sign-in
+      navigate('/dashboard'); 
     } catch (err: any) {
       setError(err.message || 'An error occurred');
       setLoading(false);
