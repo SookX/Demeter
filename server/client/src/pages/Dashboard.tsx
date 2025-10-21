@@ -77,6 +77,8 @@ function getWeatherEmoji(temp: number, description: string) {
   return "❄️";
 }
 
+
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"dashboard" | "plants">("dashboard");
@@ -192,10 +194,41 @@ export default function Dashboard() {
     fetchRecommendedPlants();
   }, [user]);
 
+
   const handleSignOut = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
+
+
+  const handleAddWatering = async (plantId: string, amount: number) => {
+  if (!user) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    // Add watering to backend
+    const res = await fetch(`${API_BASE}/plants/${plantId}/water`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ amount }),
+    });
+    if (!res.ok) throw new Error("Failed to add watering");
+
+    // Refresh user data
+    const updatedUser = await fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => r.json());
+
+    setUser(updatedUser);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleAddPlant = async (plant: Plant) => {
     if (!user) return;
@@ -427,7 +460,7 @@ export default function Dashboard() {
                     key={plant._id || plant.apiId} 
                     // @ts-expect-error: waterings always defined in Dashboard
                     plant={{ ...plant, waterings: plant.waterings || [] }} 
-                    onAddWatering={() => {}} 
+                    onAddWatering={handleAddWatering}
                   />
                 ))}
               </div>

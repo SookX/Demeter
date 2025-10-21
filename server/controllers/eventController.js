@@ -140,19 +140,24 @@ exports.generateNewsWithLLM = async (req, res) => {
 
     for (const ev of eventsFromLLM) {
       const eventDate = new Date(ev.date);
-      const sameDayExists = user.region.events.event_list.some(
-        (e) => e.eventDate.toDateString() === eventDate.toDateString()
+
+      // ✅ Check if a News already exists for that day
+      const sameDayNewsExists = user.region.events.event_list.some(
+        (e) =>
+          e.eventType === "News" &&
+          new Date(e.eventDate).toDateString() === eventDate.toDateString()
       );
 
-      if (!sameDayExists) {
-        const newEvent = {
-          eventType: "News",
-          eventDate,
-          details: `${ev.emoji}\n${ev.title}\n${ev.description}`,
-        };
-        user.region.events.event_list.push(newEvent);
-        newlyCreatedEvents.push(newEvent);
-      }
+      if (sameDayNewsExists) continue; // Skip duplicate
+
+      const newEvent = {
+        eventType: "News",
+        eventDate,
+        details: `${ev.emoji}\n${ev.title}\n${ev.description}`,
+      };
+
+      user.region.events.event_list.push(newEvent);
+      newlyCreatedEvents.push(newEvent);
     }
 
     user.region.events.last_created = new Date();
@@ -168,6 +173,7 @@ exports.generateNewsWithLLM = async (req, res) => {
   }
 };
 
+
 exports.generateReminders = async (req, res) => {
   try {
     const user = await getUserFromToken(req);
@@ -177,35 +183,37 @@ exports.generateReminders = async (req, res) => {
     });
 
     const plantsNeedingWater = response.data.plants || [];
-
     if (plantsNeedingWater.length === 0) {
       return res.status(200).json({ message: "No plants need watering today" });
     }
 
+    const today = new Date();
     const topPlants = plantsNeedingWater.slice(0, 3);
 
-    if (!user.events) {
-      user.events = { last_created: new Date(), event_list: [] };
+    if (!user.region.events) {
+      user.region.events = { last_created: new Date(), event_list: [] };
     }
 
-    const today = new Date();
     const newlyCreatedReminders = [];
 
     for (const plant of topPlants) {
-      const alreadyExists = user.region.events.event_list.some(
-        (e) => e.eventType === "Reminder" && e.details.includes(plant.name)
+      const samePlantReminderExists = user.region.events.event_list.some(
+        (e) =>
+          e.eventType === "Reminder" &&
+          e.details.includes(plant.name) &&
+          new Date(e.eventDate).toDateString() === today.toDateString()
       );
 
-      if (!alreadyExists) {
-        const newEvent = {
-          eventType: "Reminder",
-          eventDate: today,
-          details: `💧 Water your ${plant.name} today.`,
-        };
+      if (samePlantReminderExists) continue; // ✅ Skip duplicate for same plant today
 
-        user.region.events.event_list.push(newEvent);
-        newlyCreatedReminders.push(newEvent);
-      }
+      const newEvent = {
+        eventType: "Reminder",
+        eventDate: today,
+        details: `💧 Water your ${plant.name} today.`,
+      };
+
+      user.region.events.event_list.push(newEvent);
+      newlyCreatedReminders.push(newEvent);
     }
 
     user.region.events.last_created = new Date();
@@ -221,35 +229,31 @@ exports.generateReminders = async (req, res) => {
   }
 };
 
+
 exports.generateTips = async (req, res) => {
   try {
     const userRes = await axios.get(`${BASE_URL}/auth/me`, {
       headers: { Authorization: req.headers.authorization },
     });
-    
-    if (!userRes) {
-      return res.status(404).json({ error: "User not found" });
-    }
 
+    if (!userRes) return res.status(404).json({ error: "User not found" });
     const user = userRes.data;
 
     const dbUser = await User.findOne({ id: user.id });
-    if (!dbUser) {
-      return res.status(404).json({ error: "User not found in database" });
-    }
+    if (!dbUser) return res.status(404).json({ error: "User not found in database" });
 
     if (!dbUser.region.events) {
       dbUser.region.events = { last_created: new Date(), event_list: [] };
     }
 
     const today = new Date();
-
     const todayTips = dbUser.region.events.event_list.filter(
       (e) =>
         e.eventType === "Tip" &&
-        e.eventDate.toDateString() === today.toDateString()
+        new Date(e.eventDate).toDateString() === today.toDateString()
     );
 
+    // ✅ Enforce exactly 3 per day
     if (todayTips.length >= 3) {
       return res.status(200).json({ message: "Already have 3 tips for today" });
     }
@@ -275,7 +279,7 @@ exports.generateTips = async (req, res) => {
             ${userContext}
 
             Generate 3 short and useful daily plant care tips.
-            Respond **only** in JSON array like:
+            Respond only in JSON array like:
             [
               { "emoji": "🌿", "title": "Morning Watering", "description": "Water plants early to avoid evaporation loss." },
               { "emoji": "☀️", "title": "Sunlight Balance", "description": "Rotate potted plants for even sunlight exposure." }
@@ -296,7 +300,8 @@ exports.generateTips = async (req, res) => {
       return res.status(500).json({ error: "Invalid LLM JSON output" });
     }
 
-    const newTips = tipsFromLLM.slice(0, 3 - todayTips.length);
+    const neededTips = 3 - todayTips.length;
+    const newTips = tipsFromLLM.slice(0, neededTips);
 
     for (const tip of newTips) {
       dbUser.region.events.event_list.push({
@@ -318,3 +323,4 @@ exports.generateTips = async (req, res) => {
     res.status(500).json({ error: "Failed to generate tips" });
   }
 };
+
