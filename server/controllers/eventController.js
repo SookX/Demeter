@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const Groq = require("groq-sdk");
 
 const groq = new Groq();
+const BASE_URL = process.env.URL || "http://localhost:3000"; // fallback
 
 const getUserFromToken = async (req) => {
   const token = req.headers.authorization?.split(" ")[1];
@@ -79,7 +80,7 @@ exports.generateNewsWithLLM = async (req, res) => {
       return res.status(400).json({ error: "User has no coordinates" });
     }
 
-    const forecastRes = await axios.get("https://demeter-9xs8.onrender.com/weather/forecast", {
+    const forecastRes = await axios.get(`${BASE_URL}/weather/forecast`, {
       params: { lat, lon },
     });
     const forecastData = forecastRes.data;
@@ -171,7 +172,7 @@ exports.generateReminders = async (req, res) => {
   try {
     const user = await getUserFromToken(req);
 
-    const response = await axios.get("https://demeter-9xs8.onrender.com/plants/plant/water", {
+    const response = await axios.get(`${BASE_URL}/plants/plant/water`, {
       headers: { Authorization: req.headers.authorization },
     });
 
@@ -220,10 +221,9 @@ exports.generateReminders = async (req, res) => {
   }
 };
 
-
 exports.generateTips = async (req, res) => {
   try {
-    const userRes = await axios.get("https://demeter-9xs8.onrender.com/auth/me", {
+    const userRes = await axios.get(`${BASE_URL}/auth/me`, {
       headers: { Authorization: req.headers.authorization },
     });
     
@@ -317,4 +317,4 @@ exports.generateTips = async (req, res) => {
     console.error("generateTips error:", err);
     res.status(500).json({ error: "Failed to generate tips" });
   }
-}
+};

@@ -81,7 +81,7 @@ const getRegion = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return next(new AppError('No token provided', 401));
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.JWT_SECRET);
     if (!decoded || !decoded.id) return next(new AppError('Invalid token', 401));
 
     const user = await User.findOne({ id: decoded.id });

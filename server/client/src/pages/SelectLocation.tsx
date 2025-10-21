@@ -6,6 +6,7 @@ import L, { LatLngExpression } from 'leaflet';
 import { MapPin } from 'lucide-react';
 import axios from 'axios';
 
+const API_BASE = import.meta.env.VITE_URL || 'http://localhost:3000';
 // Fix Leaflet default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -46,7 +47,7 @@ export default function SelectLocationPage() {
       if (!token) throw new Error('User not authenticated');
 
       const response = await axios.post(
-        'https://demeter-9xs8.onrender.com/region/',
+        `${API_BASE}/region/`,
         { region: { lat: marker.lat, lon: marker.lng } },
         { headers: { Authorization: `Bearer ${token}` } }
       );

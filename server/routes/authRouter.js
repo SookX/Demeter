@@ -6,8 +6,9 @@ const User = require("../schemas/userSchema");
 const { createJWT, verifyJWT } = require("../utils/jwtUtils");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const jwt = require('jsonwebtoken');
 require("../utils/passportConfig");
+
+const APP_BASE_URL = process.env.URL || "http://localhost:3000";
 
 router.get("/google", (req, res, next) => {
   const state = req.query.redirect || "/";
@@ -20,16 +21,14 @@ router.get("/google", (req, res, next) => {
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { session: false, failureRedirect: "/auth/login" }),
+  passport.authenticate("google", { session: false, failureRedirect: `${APP_BASE_URL}/auth/login` }),
   catchAsync(async (req, res) => {
     if (!req.user) throw new AppError("Google login failed", 401);
 
     const token = createJWT(req.user.id, req.user.username);
-
-    const appBase = process.env.CLIENT_APP_URL || "https://demeter-9xs8.onrender.com";
     const redirectPath = req.query.state || "/";
+    const url = new URL(redirectPath, APP_BASE_URL);
 
-    const url = new URL(redirectPath, appBase);
     url.hash =
       `#token=${encodeURIComponent(token)}` +
       `&id=${encodeURIComponent(req.user.id)}` +
@@ -120,4 +119,5 @@ router.get("/me", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+
 module.exports = router;

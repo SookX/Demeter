@@ -10,6 +10,8 @@ interface EventItem {
   details: string;
 }
 
+const API_BASE = import.meta.env.VITE_URL || 'http://localhost:3000';
+
 export default function EventCard() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function EventCard() {
 
   const loadEvents = async (token: string) => {
     try {
-      const res = await axios.get('https://demeter-9xs8.onrender.com/events', {
+      const res = await axios.get(`${API_BASE}/events`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEvents(res.data?.events?.event_list || []);
@@ -38,7 +40,7 @@ export default function EventCard() {
     if (!token) return;
 
     try {
-      await axios.put(`https://demeter-9xs8.onrender.com/events/${eventId}/mark-read`, {}, {
+      await axios.put(`${API_BASE}/events/${eventId}/mark-read`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEvents(events.map(e => e._id === eventId ? { ...e, markRead: true } : e));

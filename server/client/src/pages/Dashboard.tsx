@@ -60,6 +60,7 @@ interface User {
 }
 
 
+
 function getWeatherEmoji(temp: number, description: string) {
   description = description.toLowerCase();
   if (description.includes("thunder") || description.includes("storm")) return "⛈️";
@@ -88,6 +89,8 @@ export default function Dashboard() {
   const [recommendedPlants, setRecommendedPlants] = useState<Plant[]>([]);
 
   const TREFLE_TOKEN = import.meta.env.VITE_APP_TREFLE_TOKEN;
+  const API_BASE = import.meta.env.VITE_URL || 'http://localhost:3000';
+
 
   useEffect(() => {
     const fetchUserAndWeather = async () => {
@@ -95,7 +98,7 @@ export default function Dashboard() {
       if (!token) return navigate("/login");
 
       try {
-        const userRes = await fetch("https://demeter-9xs8.onrender.com/auth/me", {
+        const userRes = await fetch(`${API_BASE}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!userRes.ok) throw new Error("Failed to fetch user");
@@ -110,13 +113,13 @@ export default function Dashboard() {
         const { lat, lon } = userData.region;
 
         const currentRes = await fetch(
-          `https://demeter-9xs8.onrender.com/weather/current?lat=${lat}&lon=${lon}`,
+          `${API_BASE}/weather/current?lat=${lat}&lon=${lon}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const currentData = await currentRes.json();
 
         const dailyRes = await fetch(
-          `https://demeter-9xs8.onrender.com/weather/daily?lat=${lat}&lon=${lon}`,
+          `${API_BASE}/weather/daily?lat=${lat}&lon=${lon}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const dailyData: ForecastDay[] = await dailyRes.json();
@@ -159,7 +162,7 @@ export default function Dashboard() {
 
       try {
         const token = localStorage.getItem("token");
-        const recRes = await fetch("https://demeter-9xs8.onrender.com/plants/recommendations", {
+        const recRes = await fetch(`${API_BASE}/plants/recommendations`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const recData = await recRes.json();
@@ -169,7 +172,7 @@ export default function Dashboard() {
           await Promise.all(
             plantNames.map(async (name) => {
               const searchRes = await fetch(
-                `https://demeter-9xs8.onrender.com/plants/search?query=${encodeURIComponent(name)}`,
+                `${API_BASE}/plants/search?query=${encodeURIComponent(name)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               if (!searchRes.ok) return null;
@@ -199,7 +202,7 @@ export default function Dashboard() {
     setAddingPlant(true);
     try {
       const token = localStorage.getItem("token");
-      await fetch("https://demeter-9xs8.onrender.com/plants/", {
+      await fetch(`${API_BASE}/plants/`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +216,7 @@ export default function Dashboard() {
         }),
       });
 
-      const updatedUser: User = await fetch("https://demeter-9xs8.onrender.com/auth/me", {
+      const updatedUser: User = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
       setUser(updatedUser);
@@ -223,6 +226,28 @@ export default function Dashboard() {
       console.error(err);
     } finally {
       setAddingPlant(false);
+    }
+  };
+
+    const handleSearch = async () => {
+    if (!searchQuery) return;
+    try {
+      const token = localStorage.getItem("token"); 
+      const res = await fetch(
+        `${API_BASE}/plants/search?query=${encodeURIComponent(searchQuery)}`,
+        {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
+        }
+      );
+  
+      if (!res.ok) throw new Error("Failed to fetch plants from backend");
+  
+      const data = await res.json();
+      setSearchResults(data.data || []);
+    } catch (err) {
+      console.error("Backend search error:", err);
     }
   };
 
@@ -351,7 +376,7 @@ export default function Dashboard() {
                 className="flex-1 border rounded px-3 py-2"
               />
               <button
-                
+                onClick={handleSearch}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
                 Search
